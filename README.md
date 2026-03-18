@@ -278,8 +278,7 @@ npm test
 
 ## Prerequisites
 
-- Python 3.11+
-- Node.js 22+
+- Python 3.13 and Node.js 22 (pinned in `.tool-versions` — install with [asdf](https://asdf-vm.com/))
 - PostgreSQL 15+
 - Redis 7+ (for workers and rate limiting)
 
