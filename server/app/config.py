@@ -19,8 +19,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
 
     # Database — required in production, defaults for local dev
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/{{APP_SLUG}}"
-    database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/{{APP_SLUG}}"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/{{APP_SLUG_UNDERSCORE}}"
+    database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/{{APP_SLUG_UNDERSCORE}}"
 
     # Auth — secret_key MUST be set via env var in production
     secret_key: str = Field(default=_WEAK_SECRET)

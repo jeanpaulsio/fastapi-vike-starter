@@ -25,7 +25,7 @@ async def seed() -> None:
     print(f"Connecting to: {settings.database_url}")
 
     # Run migrations instead of create_all to keep alembic_version in sync
-    subprocess.run(["alembic", "upgrade", "head"], check=True)
+    subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], check=True)
     print("Migrations applied")
 
     session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)

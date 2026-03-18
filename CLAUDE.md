@@ -57,12 +57,12 @@ ruff format app/ tests/
 mypy app/ --ignore-missing-imports
 
 # Database migrations
-alembic revision --autogenerate -m "description"
-alembic upgrade head
+python -m alembic revision --autogenerate -m "description"
+python -m alembic upgrade head
 
 # Celery worker (requires Redis running)
-celery -A app.workers.celery_app worker --loglevel=info
-celery -A app.workers.celery_app beat --loglevel=info
+python -m celery -A app.workers.celery_app worker --loglevel=info
+python -m celery -A app.workers.celery_app beat --loglevel=info
 
 # Seed admin user (requires Postgres running)
 python scripts/seed.py

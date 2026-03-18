@@ -66,10 +66,7 @@ done
 
 # Files that contain {{APP_SLUG}}
 for file in \
-  server/app/config.py \
-  server/alembic.ini \
   server/pyproject.toml \
-  .env.example \
   render.yaml \
   CLAUDE.md \
   README.md; do
@@ -78,9 +75,12 @@ for file in \
   fi
 done
 
-# Files that contain {{APP_SLUG_UNDERSCORE}}
+# Files that contain {{APP_SLUG_UNDERSCORE}} (database names use underscores)
 for file in \
+  server/app/config.py \
+  server/alembic.ini \
   server/tests/conftest.py \
+  .env.example \
   .github/workflows/ci.yml \
   CLAUDE.md \
   README.md; do
@@ -108,7 +108,7 @@ echo "  2. Backend setup:"
 echo "     cd server"
 echo "     python3 -m venv .venv && source .venv/bin/activate"
 echo "     pip install -e \".[dev]\""
-echo "     alembic upgrade head"
+echo "     python -m alembic upgrade head"
 echo "     python scripts/seed.py"
 echo ""
 echo "  3. Frontend setup:"

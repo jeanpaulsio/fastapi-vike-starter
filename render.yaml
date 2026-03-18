@@ -10,7 +10,7 @@ services:
     branch: main
     autoDeploy: true
     buildCommand: cd server && pip install -e .
-    preDeployCommand: cd server && alembic upgrade head
+    preDeployCommand: cd server && python -m alembic upgrade head
     startCommand: cd server && gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     healthCheckPath: /health
     envVars:

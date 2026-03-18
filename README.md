@@ -70,7 +70,7 @@ createdb myapp_test
 cd server
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-alembic upgrade head
+python -m alembic upgrade head
 python scripts/seed.py    # creates admin@example.com / admin123
 ```
 
@@ -104,10 +104,10 @@ brew services start redis  # or: docker run -d -p 6379:6379 redis
 
 # Terminal 3 — Celery worker
 cd server && source .venv/bin/activate
-celery -A app.workers.celery_app worker --loglevel=info
+python -m celery -A app.workers.celery_app worker --loglevel=info
 
 # Terminal 4 — Celery Beat (cron scheduler)
-celery -A app.workers.celery_app beat --loglevel=info
+python -m celery -A app.workers.celery_app beat --loglevel=info
 ```
 
 ## Project Structure
@@ -213,8 +213,8 @@ npm run test:coverage     # with coverage report
 2. Import it in `server/app/models/__init__.py`
 3. Generate migration: `cd server && alembic revision --autogenerate -m "add new_table"`
 4. Review the generated migration in `alembic/versions/`
-5. Apply: `alembic upgrade head`
-6. Test rollback: `alembic downgrade -1` then `alembic upgrade head`
+5. Apply: `python -m alembic upgrade head`
+6. Test rollback: `alembic downgrade -1` then `python -m alembic upgrade head`
 
 
 ## Deployment to Render
@@ -241,7 +241,7 @@ npm run test:coverage     # with coverage report
 
 ### Pre-Deploy Command
 
-The API service runs `alembic upgrade head` before each deploy. This ensures migrations run automatically.
+The API service runs `python -m alembic upgrade head` before each deploy. This ensures migrations run automatically.
 
 ## CI Pipeline
 
