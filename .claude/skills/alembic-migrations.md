@@ -161,10 +161,8 @@ def upgrade() -> None:
 
 The pre-deploy command on Render is:
 ```
-cd server && python scripts/stamp_if_needed.py && alembic upgrade head
+cd server && alembic upgrade head
 ```
-
-- `stamp_if_needed.py` is a one-time fix for databases created before migrations existed. It stamps `alembic_version` so Alembic doesn't try to recreate existing tables. For new databases (from the template), this is a no-op.
 - `alembic upgrade head` runs any pending migrations.
 
 **When deploying schema changes:**
