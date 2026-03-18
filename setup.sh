@@ -26,6 +26,14 @@ fi
 APP_SLUG="$1"
 APP_DISPLAY_NAME="$2"
 
+# Validate slug: lowercase, hyphens only (no underscores — Render URLs use hyphens)
+if [[ "$APP_SLUG" =~ [_A-Z] ]]; then
+  echo "Error: app-slug must be lowercase with hyphens, not underscores or uppercase."
+  echo "  Got:      $APP_SLUG"
+  echo "  Expected: $(echo "$APP_SLUG" | tr '[:upper:]' '[:lower:]' | tr '_' '-')"
+  exit 1
+fi
+
 # Derive underscore variant for database names (myapp -> myapp, acme-dashboard -> acme_dashboard)
 APP_SLUG_UNDERSCORE="${APP_SLUG//-/_}"
 

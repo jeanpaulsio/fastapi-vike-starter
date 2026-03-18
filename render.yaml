@@ -31,6 +31,8 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         value: "https://{{APP_SLUG}}-web.onrender.com"
+      - key: FRONTEND_URL
+        value: "https://{{APP_SLUG}}-web.onrender.com"
       - key: PYTHON_VERSION
         value: "3.13.3"
 
