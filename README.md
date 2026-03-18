@@ -224,10 +224,9 @@ npm run test:coverage     # with coverage report
 1. Push to GitHub
 2. In Render Dashboard → **New** → **Blueprint** → connect repo
 3. Render reads `render.yaml` and creates all services automatically
-4. Set additional env vars in Render Dashboard:
+4. Set additional env vars in Render Dashboard (on the API service):
    - `EMAIL_BACKEND` = `resend`
    - `RESEND_API_KEY` = your key
-   - `FRONTEND_URL` = `https://{{APP_SLUG}}-web.onrender.com`
    - `EMAIL_FROM` = `{{APP_DISPLAY_NAME}} <noreply@yourdomain.com>`
    - `SENTRY_DSN` = your DSN (optional)
 
@@ -242,6 +241,19 @@ npm run test:coverage     # with coverage report
 ### Pre-Deploy Command
 
 The API service runs `python -m alembic upgrade head` before each deploy. This ensures migrations run automatically.
+
+### Troubleshooting Render Deploys
+
+**CORS errors / API calls failing**: Verify these env vars match your actual Render service URLs:
+- `VITE_API_URL` (on the web service) — must be `https://<slug>-api.onrender.com`
+- `CORS_ORIGINS` (on the API service) — must be `https://<slug>-web.onrender.com`
+- `FRONTEND_URL` (on the API service) — must be `https://<slug>-web.onrender.com`
+
+If you used underscores in your app slug (e.g. `starter_app` instead of `starter-app`), the Render URLs will be wrong. The slug must use **hyphens** — `setup.sh` enforces this.
+
+**Email verification/password reset links point to localhost**: Set `FRONTEND_URL` on the API service to your web service URL.
+
+**Login works but page shows "Loading..."**: The frontend can't reach the API. Check `VITE_API_URL` on the web service and `CORS_ORIGINS` on the API service.
 
 ## CI Pipeline
 
