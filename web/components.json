@@ -2,12 +2,12 @@
   "$schema": "https://ui.shadcn.com/schema.json",
   "style": "default",
   "tailwind": {
-    "config": "tailwind.config.ts",
-    "css": "layouts/tailwind.css",
+    "config": "",
+    "css": "pages/tailwind.css",
     "baseColor": "gray",
     "cssVariables": true
   },
-  "rsc": true,
+  "rsc": false,
   "tsx": true,
   "aliases": {
     "utils": "@/lib/utils",
