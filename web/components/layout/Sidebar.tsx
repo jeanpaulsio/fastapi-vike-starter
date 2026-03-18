@@ -5,7 +5,7 @@ import { useAuthStore } from "@/stores/auth-store";
 
 const NAV_ITEMS = [
   { href: "/app/dashboard", label: "Dashboard", icon: "⊞" },
-  { href: "/app/projects", label: "Projects", icon: "◫" },
+  { href: "/app/items", label: "Items", icon: "◫" },
   { href: "/app/team", label: "Team", icon: "◎" },
   { href: "/app/settings", label: "Settings", icon: "⚙" },
 ];

@@ -35,7 +35,7 @@ describe("Sidebar", () => {
     render(<Sidebar open={true} onClose={vi.fn()} />);
 
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Projects")).toBeInTheDocument();
+    expect(screen.getByText("Items")).toBeInTheDocument();
     expect(screen.getByText("Team")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
   });
@@ -62,7 +62,7 @@ describe("Sidebar", () => {
     const onClose = vi.fn();
     render(<Sidebar open={true} onClose={onClose} />);
 
-    fireEvent.click(screen.getByText("Projects"));
+    fireEvent.click(screen.getByText("Items"));
     expect(onClose).toHaveBeenCalled();
   });
 

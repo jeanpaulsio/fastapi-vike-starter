@@ -1,12 +1,24 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { APP_NAME } from "@/lib/app-config";
 import { Head } from "@/pages/+Head";
 import LandingPage from "@/pages/index/+Page";
-import ProjectsPage from "@/pages/app/projects/+Page";
+import ItemsPage from "@/pages/app/items/+Page";
 import TeamPage from "@/pages/app/team/+Page";
 import SettingsPage from "@/pages/app/settings/+Page";
+
+vi.mock("@/services/items", () => ({
+  listItems: vi.fn().mockResolvedValue({ items: [], total: 0, page: 1, limit: 20, has_more: false }),
+  createItem: vi.fn(),
+  deleteItem: vi.fn(),
+}));
+
+function withQueryClient(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
+}
 
 describe("Head", () => {
   it("renders viewport meta tag", () => {
@@ -26,10 +38,10 @@ describe("LandingPage", () => {
   });
 });
 
-describe("ProjectsPage", () => {
+describe("ItemsPage", () => {
   it("renders heading", () => {
-    render(<ProjectsPage />);
-    expect(screen.getByText("Projects")).toBeInTheDocument();
+    render(withQueryClient(<ItemsPage />));
+    expect(screen.getByText("Items")).toBeInTheDocument();
   });
 });
 

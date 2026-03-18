@@ -9,9 +9,9 @@ describe("DashboardPage", () => {
     useAuthStore.setState({ user: null, isAuthenticated: false });
   });
 
-  it("shows 'Good morning, there' when no user is set", () => {
+  it("shows 'Welcome, there' when no user is set", () => {
     render(<DashboardPage />);
-    expect(screen.getByText(/Good morning, there/)).toBeInTheDocument();
+    expect(screen.getByText(/Welcome, there/)).toBeInTheDocument();
   });
 
   it("shows the user's first name when logged in", () => {
@@ -30,14 +30,14 @@ describe("DashboardPage", () => {
     });
 
     render(<DashboardPage />);
-    expect(screen.getByText(/Good morning, Jane/)).toBeInTheDocument();
+    expect(screen.getByText(/Welcome, Jane/)).toBeInTheDocument();
   });
 
   it("renders all stat cards", () => {
     render(<DashboardPage />);
-    expect(screen.getByText("Total Clicks")).toBeInTheDocument();
-    expect(screen.getByText("Total Impressions")).toBeInTheDocument();
-    expect(screen.getByText("Clients Healthy")).toBeInTheDocument();
-    expect(screen.getByText("Pending Approvals")).toBeInTheDocument();
+    expect(screen.getByText("Total Items")).toBeInTheDocument();
+    expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(screen.getByText("Archived")).toBeInTheDocument();
+    expect(screen.getByText("This Week")).toBeInTheDocument();
   });
 });
