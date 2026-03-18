@@ -34,5 +34,5 @@ app.get("*", async (req, res) => {
 
 const port = parseInt(process.env.PORT ?? "3000", 10);
 app.listen(port, () => {
-  console.log(`Test App frontend running at http://localhost:${port}`);
+  console.log(`{{APP_DISPLAY_NAME}} frontend running at http://localhost:${port}`);
 });

@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 No exceptions — not for one-line fixes, not for typos, not for anything.
 
-## Product: Test App
+## Product: {{APP_DISPLAY_NAME}}
 
 A full-stack web application built with FastAPI (Python) + Vike/React (TypeScript). Features complete authentication, SSR, background workers, and Render deployment.
 
@@ -111,7 +111,7 @@ npm test            # Vitest (80% coverage target)
 | New background job? | `server/app/workers/` as a Celery task |
 | New cron job? | Decorate with `@cron("name", hour=2)` in worker module — auto-registered |
 | New migration? | `cd server && alembic revision --autogenerate -m "description"` |
-| New CRUD resource? | Extend `BaseRepository` in `services/` (see `user_service.py` as example) |
+| New CRUD resource? | Extend `BaseRepository` in `services/` (see `item_service.py` as example) |
 
 ## Backend Patterns
 
@@ -165,7 +165,7 @@ Defaults to console backend in dev. Set `EMAIL_BACKEND=resend` or `EMAIL_BACKEND
 
 ## Data Model (Core Tables)
 
-`users`, `verification_tokens`
+`users`, `verification_tokens`, `items`
 
 All models extend `Base` with UUID primary key and `TimestampMixin` (created_at, updated_at).
 

@@ -125,7 +125,7 @@ celery -A app.workers.celery_app beat --loglevel=info
 │   │   └── utils/           # Exceptions, pagination
 │   ├── tests/               # pytest (unit + integration)
 │   ├── alembic/             # Database migrations
-│   └── scripts/             # seed.py, stamp_if_needed.py
+│   └── scripts/             # seed.py
 │
 ├── web/                     # Vike frontend
 │   ├── pages/               # File-based routing (+Page, +Layout, +guard)
@@ -135,7 +135,6 @@ celery -A app.workers.celery_app beat --loglevel=info
 │   ├── lib/                 # App config, types, utilities
 │   └── tests/               # Vitest + React Testing Library
 │
-├── .claude/skills/          # Claude Code reference docs
 ├── .github/workflows/       # CI pipeline
 ├── render.yaml              # Render deployment Blueprint
 ├── setup.sh                 # Project initialization script
@@ -185,7 +184,7 @@ celery -A app.workers.celery_app beat --loglevel=info
 cd server && source .venv/bin/activate
 
 # Create test database (once)
-createdb testapp_test
+createdb {{APP_SLUG_UNDERSCORE}}_test
 
 # Run all tests
 pytest tests/ -v
@@ -217,7 +216,6 @@ npm run test:coverage     # with coverage report
 5. Apply: `alembic upgrade head`
 6. Test rollback: `alembic downgrade -1` then `alembic upgrade head`
 
-See `.claude/skills/alembic-migrations.md` for detailed patterns.
 
 ## Deployment to Render
 
@@ -229,23 +227,21 @@ See `.claude/skills/alembic-migrations.md` for detailed patterns.
 4. Set additional env vars in Render Dashboard:
    - `EMAIL_BACKEND` = `resend`
    - `RESEND_API_KEY` = your key
-   - `FRONTEND_URL` = `https://testapp-web.onrender.com`
-   - `EMAIL_FROM` = `Test App <noreply@yourdomain.com>`
+   - `FRONTEND_URL` = `https://{{APP_SLUG}}-web.onrender.com`
+   - `EMAIL_FROM` = `{{APP_DISPLAY_NAME}} <noreply@yourdomain.com>`
    - `SENTRY_DSN` = your DSN (optional)
 
 ### Verify First Deploy
 
-1. Check health: `curl https://testapp-api.onrender.com/health`
+1. Check health: `curl https://{{APP_SLUG}}-api.onrender.com/health`
    — should return `{"status": "healthy", "postgres": "connected", "redis": "connected"}`
-2. Open `https://testapp-web.onrender.com`
+2. Open `https://{{APP_SLUG}}-web.onrender.com`
 3. Run seed script via Render Shell: `cd server && python scripts/seed.py`
 4. Login with `admin@example.com` / `admin123`
 
 ### Pre-Deploy Command
 
-The API service runs `python scripts/stamp_if_needed.py && alembic upgrade head` before each deploy. This ensures migrations run automatically.
-
-See `.claude/skills/render-deployment.md` for deployment patterns and gotchas.
+The API service runs `alembic upgrade head` before each deploy. This ensures migrations run automatically.
 
 ## CI Pipeline
 

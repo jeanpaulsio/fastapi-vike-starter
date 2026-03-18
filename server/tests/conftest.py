@@ -21,7 +21,7 @@ from app.services.auth_service import create_access_token, hash_password
 # NullPool ensures each request gets a fresh connection (no pooling conflicts)
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/testapp_test",
+    "postgresql+asyncpg://postgres:postgres@localhost:5432/{{APP_SLUG_UNDERSCORE}}_test",
 )
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
@@ -41,6 +41,7 @@ async def setup_db() -> AsyncGenerator[None, None]:
         _tables_created = True
     yield
     async with engine.begin() as conn:
+        await conn.execute(text("DELETE FROM items"))
         await conn.execute(text("DELETE FROM verification_tokens"))
         await conn.execute(text("DELETE FROM users"))
 

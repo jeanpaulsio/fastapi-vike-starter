@@ -1,42 +1,42 @@
-# Render Blueprint — Test App
+# Render Blueprint — {{APP_DISPLAY_NAME}}
 # https://render.com/docs/blueprint-spec
 
 services:
   # FastAPI backend
   - type: web
-    name: testapp-api
+    name: {{APP_SLUG}}-api
     runtime: python
     plan: standard
     branch: main
     autoDeploy: true
     buildCommand: cd server && pip install -e .
-    preDeployCommand: cd server && python scripts/stamp_if_needed.py && alembic upgrade head
+    preDeployCommand: cd server && alembic upgrade head
     startCommand: cd server && gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: testapp-db
+          name: {{APP_SLUG}}-db
           property: connectionString
       - key: DATABASE_URL_SYNC
         fromDatabase:
-          name: testapp-db
+          name: {{APP_SLUG}}-db
           property: connectionString
       - key: REDIS_URL
         fromService:
-          name: testapp-redis
+          name: {{APP_SLUG}}-redis
           type: redis
           property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: "https://testapp-web.onrender.com"
+        value: "https://{{APP_SLUG}}-web.onrender.com"
       - key: PYTHON_VERSION
         value: "3.13.3"
 
   # Celery worker
   - type: worker
-    name: testapp-worker
+    name: {{APP_SLUG}}-worker
     runtime: python
     plan: standard
     branch: main
@@ -46,15 +46,15 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: testapp-db
+          name: {{APP_SLUG}}-db
           property: connectionString
       - key: DATABASE_URL_SYNC
         fromDatabase:
-          name: testapp-db
+          name: {{APP_SLUG}}-db
           property: connectionString
       - key: REDIS_URL
         fromService:
-          name: testapp-redis
+          name: {{APP_SLUG}}-redis
           type: redis
           property: connectionString
       - key: SECRET_KEY
@@ -64,7 +64,7 @@ services:
 
   # Celery Beat scheduler (single instance)
   - type: worker
-    name: testapp-beat
+    name: {{APP_SLUG}}-beat
     runtime: python
     plan: starter
     branch: main
@@ -74,11 +74,11 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: testapp-db
+          name: {{APP_SLUG}}-db
           property: connectionString
       - key: REDIS_URL
         fromService:
-          name: testapp-redis
+          name: {{APP_SLUG}}-redis
           type: redis
           property: connectionString
       - key: SECRET_KEY
@@ -88,7 +88,7 @@ services:
 
   # Vike/React frontend (SSR — Node.js)
   - type: web
-    name: testapp-web
+    name: {{APP_SLUG}}-web
     runtime: node
     plan: starter
     branch: main
@@ -101,14 +101,14 @@ services:
       - key: NODE_ENV
         value: "production"
       - key: VITE_API_URL
-        value: "https://testapp-api.onrender.com"
+        value: "https://{{APP_SLUG}}-api.onrender.com"
 
   # Redis
   - type: redis
-    name: testapp-redis
+    name: {{APP_SLUG}}-redis
     plan: starter
     ipAllowList: []
 
 databases:
-  - name: testapp-db
+  - name: {{APP_SLUG}}-db
     plan: basic-1gb

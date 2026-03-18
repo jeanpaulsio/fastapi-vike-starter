@@ -14,13 +14,13 @@ class Settings(BaseSettings):
     )
 
     # App
-    app_name: str = "Test App"
+    app_name: str = "{{APP_DISPLAY_NAME}}"
     debug: bool = False
     cors_origins: str = "http://localhost:3000"
 
     # Database — required in production, defaults for local dev
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/testapp"
-    database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/testapp"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/{{APP_SLUG}}"
+    database_url_sync: str = "postgresql://postgres:postgres@localhost:5432/{{APP_SLUG}}"
 
     # Auth — secret_key MUST be set via env var in production
     secret_key: str = Field(default=_WEAK_SECRET)
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     # Email
     email_backend: str = "console"  # "console", "resend", or "smtp"
     resend_api_key: str = ""
-    email_from: str = "Test App <noreply@example.com>"
+    email_from: str = "{{APP_DISPLAY_NAME}} <noreply@example.com>"
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_username: str = ""
