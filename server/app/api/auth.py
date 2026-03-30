@@ -2,13 +2,14 @@ import uuid
 from pathlib import Path
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
+from app.limiter import limiter
 from app.models.user import User, UserRole
 from app.models.verification_token import TokenType
 from app.schemas.auth import (
@@ -50,7 +51,10 @@ def _render_template(name: str, **kwargs: str) -> str:
 
 
 @router.post("/register", response_model=RegisterResponse)
-async def register(body: RegisterRequest, db: AsyncSession = Depends(get_db)) -> RegisterResponse:
+@limiter.limit("5/minute")
+async def register(
+    request: Request, body: RegisterRequest, db: AsyncSession = Depends(get_db)
+) -> RegisterResponse:
     result = await db.execute(select(User).where(User.email == body.email))
     if result.scalar_one_or_none() is not None:
         raise HTTPException(
@@ -120,8 +124,9 @@ async def verify_email(
 
 
 @router.post("/forgot-password", response_model=MessageResponse)
+@limiter.limit("3/minute")
 async def forgot_password(
-    body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)
+    request: Request, body: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)
 ) -> MessageResponse:
     # Always return the same response to prevent email enumeration
     result = await db.execute(
@@ -151,8 +156,9 @@ async def forgot_password(
 
 
 @router.post("/reset-password", response_model=MessageResponse)
+@limiter.limit("5/minute")
 async def reset_password(
-    body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)
+    request: Request, body: ResetPasswordRequest, db: AsyncSession = Depends(get_db)
 ) -> MessageResponse:
     token = await consume_token(db, body.token, TokenType.PASSWORD_RESET)
     if token is None:
@@ -176,7 +182,10 @@ async def reset_password(
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)) -> TokenResponse:
+@limiter.limit("10/minute")
+async def login(
+    request: Request, body: LoginRequest, db: AsyncSession = Depends(get_db)
+) -> TokenResponse:
     user = await authenticate_user(db, body.email, body.password)
     if user is None:
         raise HTTPException(

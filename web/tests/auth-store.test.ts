@@ -1,28 +1,56 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { useAuthStore } from "@/stores/auth-store";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createElement } from "react";
 
-// jsdom doesn't implement document.cookie deletion via max-age=0,
-// so we reset it manually between tests.
-function clearCookies() {
-  document.cookie.split(";").forEach((c) => {
-    const key = c.split("=")[0].trim();
-    document.cookie = `${key}=; max-age=0`;
+vi.mock("@/lib/cookies", () => ({
+  getCookie: vi.fn(),
+  setCookie: vi.fn(),
+  deleteCookie: vi.fn(),
+}));
+
+vi.mock("@/services/auth", () => ({
+  getMe: vi.fn(),
+}));
+
+vi.mock("vike/client/router", () => ({
+  navigate: vi.fn(),
+}));
+
+import { useCurrentUser, useLogout, CURRENT_USER_KEY } from "@/hooks/useAuth";
+import { getCookie, deleteCookie } from "@/lib/cookies";
+import { getMe } from "@/services/auth";
+import { navigate } from "vike/client/router";
+import type { Mock } from "vitest";
+
+const mockedGetCookie = getCookie as Mock;
+const mockedGetMe = getMe as Mock;
+
+function createWrapper() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
+  return ({ children }: { children: React.ReactNode }) =>
+    createElement(QueryClientProvider, { client }, children);
 }
 
-describe("auth store", () => {
+describe("useAuth hooks", () => {
   beforeEach(() => {
-    clearCookies();
-    useAuthStore.setState({ user: null, isAuthenticated: false });
+    vi.clearAllMocks();
   });
 
-  it("starts unauthenticated with no token", () => {
-    const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(false);
-    expect(state.user).toBeNull();
+  it("useCurrentUser does not fetch when no access_token cookie", () => {
+    mockedGetCookie.mockReturnValue(undefined);
+
+    const { result } = renderHook(() => useCurrentUser(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.data).toBeUndefined();
+    expect(mockedGetMe).not.toHaveBeenCalled();
   });
 
-  it("setUser marks as authenticated", () => {
+  it("useCurrentUser fetches when access_token cookie exists", async () => {
     const mockUser = {
       id: "123",
       email: "test@example.com",
@@ -33,34 +61,34 @@ describe("auth store", () => {
       email_verified: true,
       created_at: "2026-01-01T00:00:00Z",
     };
+    mockedGetCookie.mockReturnValue("test-token");
+    mockedGetMe.mockResolvedValue(mockUser);
 
-    useAuthStore.getState().setUser(mockUser);
-    const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(true);
-    expect(state.user?.email).toBe("test@example.com");
-  });
-
-  it("logout clears user and tokens", () => {
-    document.cookie = "access_token=test; path=/";
-    document.cookie = "refresh_token=test; path=/";
-
-    useAuthStore.getState().setUser({
-      id: "123",
-      email: "test@example.com",
-      first_name: "Test",
-      last_name: "User",
-      role: "user",
-      is_active: true,
-      email_verified: true,
-      created_at: "2026-01-01T00:00:00Z",
+    const { result } = renderHook(() => useCurrentUser(), {
+      wrapper: createWrapper(),
     });
 
-    useAuthStore.getState().logout();
-    const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(false);
-    expect(state.user).toBeNull();
-    // Cookies cleared — key should not appear in document.cookie
-    expect(document.cookie).not.toContain("access_token=test");
-    expect(document.cookie).not.toContain("refresh_token=test");
+    // Wait for query to resolve
+    await vi.waitFor(() => {
+      expect(result.current.data).toBeDefined();
+    });
+
+    expect(result.current.data?.email).toBe("test@example.com");
+  });
+
+  it("useLogout clears cookies and navigates to /login", () => {
+    const { result } = renderHook(() => useLogout(), {
+      wrapper: createWrapper(),
+    });
+
+    result.current();
+
+    expect(deleteCookie).toHaveBeenCalledWith("access_token");
+    expect(deleteCookie).toHaveBeenCalledWith("refresh_token");
+    expect(navigate).toHaveBeenCalledWith("/login");
+  });
+
+  it("CURRENT_USER_KEY is exported for cache invalidation", () => {
+    expect(CURRENT_USER_KEY).toEqual(["currentUser"]);
   });
 });

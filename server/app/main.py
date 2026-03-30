@@ -1,34 +1,44 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+import redis.asyncio as aioredis
 import sentry_sdk
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.api.router import api_router, root_router
 from app.config import settings
-from app.database import close_all, init_redis
+from app.database import close_all
+from app.limiter import limiter
 from app.middleware.errors import register_error_handlers
 from app.middleware.logging import register_logging
-from app.middleware.rate_limit import register_rate_limiting
 
 logger = structlog.get_logger()
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Manage connection lifecycle — startup and shutdown."""
     logger.info("app_starting", pool_size=settings.db_pool_size)
     try:
-        await init_redis()
+        app.state.redis = aioredis.from_url(
+            settings.redis_url,
+            decode_responses=True,
+            max_connections=20,
+        )
         logger.info("redis_connected")
     except Exception as exc:
         logger.warning("redis_connection_failed", exc=str(exc))
+        app.state.redis = None
 
     yield
 
     logger.info("app_shutting_down")
+    if getattr(app.state, "redis", None) is not None:
+        await app.state.redis.aclose()
     await close_all()
     logger.info("connections_closed")
 
@@ -50,7 +60,6 @@ def create_app() -> FastAPI:
     )
 
     register_logging(app, debug=settings.debug)
-    register_rate_limiting(app, limit=settings.rate_limit_per_minute)
 
     app.add_middleware(
         CORSMiddleware,
@@ -59,6 +68,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Rate limiting (decorator-based via slowapi — use @limiter.limit() on routes)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
     register_error_handlers(app)
 

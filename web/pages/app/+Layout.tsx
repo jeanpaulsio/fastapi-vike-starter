@@ -2,31 +2,17 @@ import { useState, useEffect } from "react";
 import { navigate } from "vike/client/router";
 import { APP_LOGO, APP_NAME } from "@/lib/app-config";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { useAuthStore } from "@/stores/auth-store";
-import { getMe } from "@/services/auth";
-import { useQuery } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/useAuth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, user, setUser, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const { isError } = useQuery({
-    queryKey: ["me"],
-    queryFn: async () => {
-      const userData = await getMe();
-      setUser(userData);
-      return userData;
-    },
-    enabled: isAuthenticated && !user,
-    retry: false,
-  });
+  const { data: user, isError } = useCurrentUser();
 
   useEffect(() => {
     if (isError) {
-      logout();
       navigate("/login");
     }
-  }, [isError, logout]);
+  }, [isError]);
 
   if (isError) return null;
 

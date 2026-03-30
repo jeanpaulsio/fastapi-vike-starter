@@ -1,19 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import LoginPage from "@/pages/login/+Page";
 
 const mockLogin = vi.fn();
-const mockGetMe = vi.fn();
 const mockNavigate = vi.fn();
 
 vi.mock("@/services/auth", () => ({
   login: (...args: unknown[]) => mockLogin(...args),
-  getMe: (...args: unknown[]) => mockGetMe(...args),
+  getMe: vi.fn(),
 }));
 
 vi.mock("vike/client/router", () => ({
   navigate: (...args: unknown[]) => mockNavigate(...args),
 }));
+
+vi.mock("@/hooks/useAuth", () => ({
+  CURRENT_USER_KEY: ["currentUser"],
+}));
+
+function renderWithQuery(ui: React.ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
 
 function getEmailInput(): HTMLInputElement {
   return document.querySelector('input[type="email"]') as HTMLInputElement;
@@ -36,7 +47,7 @@ describe("LoginPage", () => {
   });
 
   it("renders the login form", () => {
-    render(<LoginPage />);
+    renderWithQuery(<LoginPage />);
 
     expect(getEmailInput()).toBeInTheDocument();
     expect(getPasswordInput()).toBeInTheDocument();
@@ -46,7 +57,7 @@ describe("LoginPage", () => {
   it("shows loading state while submitting", async () => {
     mockLogin.mockReturnValue(new Promise(() => {}));
 
-    render(<LoginPage />);
+    renderWithQuery(<LoginPage />);
     fillAndSubmit("test@example.com", "password");
 
     await waitFor(() => {
@@ -61,26 +72,14 @@ describe("LoginPage", () => {
       refresh_token: "rt",
       token_type: "bearer",
     };
-    const user = {
-      id: "1",
-      email: "test@example.com",
-      first_name: "Test",
-      last_name: "User",
-      role: "user",
-      is_active: true,
-      email_verified: true,
-      created_at: "2026-01-01T00:00:00Z",
-    };
     mockLogin.mockResolvedValue(tokens);
-    mockGetMe.mockResolvedValue(user);
     mockNavigate.mockResolvedValue(undefined);
 
-    render(<LoginPage />);
+    renderWithQuery(<LoginPage />);
     fillAndSubmit("test@example.com", "password123");
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith("test@example.com", "password123");
-      expect(mockGetMe).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith("/app/dashboard");
     });
   });
@@ -92,7 +91,7 @@ describe("LoginPage", () => {
     });
     mockLogin.mockRejectedValue(axiosError);
 
-    render(<LoginPage />);
+    renderWithQuery(<LoginPage />);
     fillAndSubmit("bad@email.com", "wrong");
 
     await waitFor(() => {

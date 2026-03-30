@@ -145,7 +145,7 @@ Defaults to console backend in dev. Set `EMAIL_BACKEND=resend` or `EMAIL_BACKEND
 - **Structured logging**: structlog with request IDs (X-Request-ID header)
 - **Error tracking**: Sentry (configure SENTRY_DSN env var)
 - **Code coverage**: Codecov with separate `backend` (90% target) and `frontend` (80% target) flags — see `codecov.yml`
-- **Rate limiting**: Redis-backed, per-IP, configurable via RATE_LIMIT_PER_MINUTE
+- **Rate limiting**: slowapi (decorator-based) — use `@limiter.limit("10/minute")` on sensitive routes
 
 ## Auth System
 
@@ -161,6 +161,7 @@ Defaults to console backend in dev. Set `EMAIL_BACKEND=resend` or `EMAIL_BACKEND
 - **Cookies, not localStorage** — required for SSR
 - **Guards are `+guard.ts`, not `+guard.client.ts`** — enforced on server-side render
 - **Isomorphic cookie helpers** — `getCookie(name, cookieStr?)` works server + client
+- **React Query for user state** — `useCurrentUser()` hook, no Zustand for server state
 - RBAC: `UserRole.ADMIN` and `UserRole.USER`
 
 ## Data Model (Core Tables)

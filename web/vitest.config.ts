@@ -15,7 +15,7 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json"],
-      include: ["lib/**", "services/**", "stores/**", "components/**", "pages/**"],
+      include: ["lib/**", "services/**", "hooks/**", "components/**", "pages/**"],
       exclude: ["pages/+config.ts", "pages/tailwind.css", "lib/types.ts"],
     },
   },

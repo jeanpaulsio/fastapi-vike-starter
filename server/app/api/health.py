@@ -1,11 +1,11 @@
 from typing import Any
 
 import structlog
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from sqlalchemy import text
 
 from app.config import settings
-from app.database import async_session_factory, get_redis
+from app.database import async_session_factory
 
 logger = structlog.get_logger()
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("/health")
-async def health_check() -> dict[str, Any]:
+async def health_check(request: Request) -> dict[str, Any]:
     """Health check — verifies Postgres and Redis connectivity.
 
     Returns only status indicators, no internal error details.
@@ -29,9 +29,12 @@ async def health_check() -> dict[str, Any]:
         logger.error("health_postgres_error", exc=str(exc))
 
     try:
-        r = await get_redis()
-        await r.ping()
-        redis_ok = True
+        redis_client = getattr(request.app.state, "redis", None)
+        if redis_client is not None:
+            await redis_client.ping()
+            redis_ok = True
+        else:
+            logger.warning("health_redis_not_initialized")
     except Exception as exc:
         logger.error("health_redis_error", exc=str(exc))
 

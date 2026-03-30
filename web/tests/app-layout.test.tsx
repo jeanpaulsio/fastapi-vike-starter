@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AppLayout from "@/pages/app/+Layout";
-import { useAuthStore } from "@/stores/auth-store";
 
 vi.mock("vike-react/usePageContext", () => ({
   usePageContext: () => ({ urlPathname: "/app/dashboard" }),
@@ -12,8 +11,22 @@ vi.mock("vike/client/router", () => ({
   navigate: vi.fn(),
 }));
 
-vi.mock("@/services/auth", () => ({
-  getMe: vi.fn(),
+vi.mock("@/hooks/useAuth", () => ({
+  useCurrentUser: () => ({
+    data: {
+      id: "1",
+      email: "jane@example.com",
+      first_name: "Jane",
+      last_name: "Doe",
+      role: "user",
+      is_active: true,
+      email_verified: true,
+      created_at: "2026-01-01T00:00:00Z",
+    },
+    isError: false,
+  }),
+  useLogout: () => vi.fn(),
+  CURRENT_USER_KEY: ["currentUser"],
 }));
 
 function renderWithQuery(ui: React.ReactElement) {
@@ -26,19 +39,6 @@ function renderWithQuery(ui: React.ReactElement) {
 describe("AppLayout", () => {
   beforeEach(() => {
     cleanup();
-    useAuthStore.setState({
-      user: {
-        id: "1",
-        email: "jane@example.com",
-        first_name: "Jane",
-        last_name: "Doe",
-        role: "user",
-        is_active: true,
-        email_verified: true,
-        created_at: "2026-01-01T00:00:00Z",
-      },
-      isAuthenticated: true,
-    });
   });
 
   it("renders children and sidebar", () => {

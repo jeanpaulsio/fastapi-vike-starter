@@ -1,14 +1,14 @@
 import axios from "axios";
+import * as Sentry from "@sentry/react";
 
 import { deleteCookie, getCookie, setCookie } from "@/lib/cookies";
 
 const apiClient = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL ?? ""}/api`,
   headers: { "Content-Type": "application/json" },
-  withCredentials: true,
 });
 
-// Request interceptor: attach access token from cookie
+// Request interceptor: attach access token as Bearer header
 apiClient.interceptors.request.use((config) => {
   if (typeof window === "undefined") return config;
   const token = getCookie("access_token");
@@ -25,8 +25,6 @@ apiClient.interceptors.response.use(
     if (typeof window === "undefined") return Promise.reject(error);
 
     const originalRequest = error.config;
-
-    // Skip refresh/redirect for auth endpoints — let the caller handle the error
     const isAuthEndpoint = originalRequest.url?.startsWith("/auth/");
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
@@ -38,7 +36,7 @@ apiClient.interceptors.response.use(
           const { data } = await axios.post(`${import.meta.env.VITE_API_URL ?? ""}/api/auth/refresh`, {
             refresh_token: refreshToken,
           });
-          setCookie("access_token", data.access_token, 24 * 60 * 60);
+          setCookie("access_token", data.access_token, 30 * 60);
           setCookie("refresh_token", data.refresh_token, 7 * 24 * 60 * 60);
           originalRequest.headers.Authorization = `Bearer ${data.access_token}`;
           return apiClient(originalRequest);
@@ -48,8 +46,17 @@ apiClient.interceptors.response.use(
           window.location.href = "/login";
         }
       } else {
+        deleteCookie("access_token");
         window.location.href = "/login";
       }
+    }
+
+    // Report unexpected API errors (not 401s, not auth endpoints) to Sentry
+    const status = error.response?.status;
+    if (status && status !== 401 && !isAuthEndpoint && status >= 500) {
+      Sentry.captureException(error, {
+        tags: { api_status: status, api_url: originalRequest.url },
+      });
     }
 
     return Promise.reject(error);

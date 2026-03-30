@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
     algorithm: str = "HS256"
 
-    # Database pool
-    db_pool_size: int = 10
-    db_max_overflow: int = 20
+    # Database pool — sized for Render starter plan; increase for larger instances
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
     db_pool_timeout: int = 30
     db_pool_recycle: int = 1800  # 30 minutes
 
@@ -55,9 +55,6 @@ class Settings(BaseSettings):
 
     # Sentry
     sentry_dsn: str = ""
-
-    # Rate Limiting
-    rate_limit_per_minute: int = 100
 
     @model_validator(mode="after")
     def enforce_production_settings(self) -> "Settings":
