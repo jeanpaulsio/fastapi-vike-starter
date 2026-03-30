@@ -52,11 +52,24 @@ def register_error_handlers(app: FastAPI) -> None:
     async def validation_error_handler(
         _request: Request, exc: RequestValidationError
     ) -> JSONResponse:
+        # exc.errors() can contain non-serializable objects (e.g. ValueError
+        # instances in the 'ctx' field). Stringify the ctx to ensure the
+        # response is always JSON-serializable.
+        safe_errors = []
+        for err in exc.errors():
+            clean = {**err}
+            if "ctx" in clean:
+                clean["ctx"] = {
+                    k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
+                    for k, v in clean["ctx"].items()
+                }
+            safe_errors.append(clean)
+
         return error_response(
             code="ValidationError",
             message="Request validation failed",
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=exc.errors(),
+            detail=safe_errors,
         )
 
     @app.exception_handler(Exception)

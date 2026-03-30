@@ -1,18 +1,19 @@
 import { useState } from "react";
 import axios from "axios";
 import { navigate } from "vike/client/router";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { APP_LOGO, APP_NAME, APP_TAGLINE } from "@/lib/app-config";
 import { setCookie } from "@/lib/cookies";
-import { login, getMe } from "@/services/auth";
-import { useAuthStore } from "@/stores/auth-store";
+import { login } from "@/services/auth";
+import { CURRENT_USER_KEY } from "@/hooks/useAuth";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const setUser = useAuthStore((s) => s.setUser);
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,11 +22,11 @@ export default function LoginPage() {
 
     try {
       const tokens = await login(email, password);
-      setCookie("access_token", tokens.access_token, 24 * 60 * 60);
+      setCookie("access_token", tokens.access_token, 30 * 60);
       setCookie("refresh_token", tokens.refresh_token, 7 * 24 * 60 * 60);
 
-      const user = await getMe();
-      setUser(user);
+      // Invalidate so useCurrentUser refetches on the next page
+      await queryClient.invalidateQueries({ queryKey: CURRENT_USER_KEY });
       await navigate("/app/dashboard");
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {

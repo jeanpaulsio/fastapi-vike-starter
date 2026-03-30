@@ -1,7 +1,7 @@
-import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser } from "@/hooks/useAuth";
 
 export default function DashboardPage() {
-  const user = useAuthStore((s) => s.user);
+  const { data: user } = useCurrentUser();
   const firstName = user?.first_name ?? "there";
 
   return (

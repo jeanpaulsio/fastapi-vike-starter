@@ -1,15 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import axios from "axios";
 
-// Must mock cookies before importing client
+// Must mock cookies and Sentry before importing client
 vi.mock("@/lib/cookies", () => ({
   getCookie: vi.fn(),
   setCookie: vi.fn(),
   deleteCookie: vi.fn(),
 }));
 
+vi.mock("@sentry/react", () => ({
+  captureException: vi.fn(),
+}));
+
 import apiClient from "@/services/client";
 import { getCookie, setCookie, deleteCookie } from "@/lib/cookies";
+import * as Sentry from "@sentry/react";
 import type { Mock } from "vitest";
 
 const mockedGetCookie = getCookie as Mock;
@@ -41,8 +46,8 @@ describe("apiClient", () => {
     expect(apiClient.defaults.headers["Content-Type"]).toBe("application/json");
   });
 
-  it("has withCredentials enabled", () => {
-    expect(apiClient.defaults.withCredentials).toBe(true);
+  it("does not set withCredentials (uses Bearer headers instead)", () => {
+    expect(apiClient.defaults.withCredentials).toBeFalsy();
   });
 
   describe("request interceptor", () => {
@@ -98,7 +103,7 @@ describe("apiClient", () => {
       expect(mockPost).toHaveBeenCalledWith("/api/auth/refresh", {
         refresh_token: "rt-123",
       });
-      expect(mockedSetCookie).toHaveBeenCalledWith("access_token", "new-at", 86400);
+      expect(mockedSetCookie).toHaveBeenCalledWith("access_token", "new-at", 1800);
       expect(mockedSetCookie).toHaveBeenCalledWith("refresh_token", "new-rt", 604800);
 
       mockPost.mockRestore();
@@ -140,10 +145,9 @@ describe("apiClient", () => {
       expect(mockedDeleteCookie).toHaveBeenCalledWith("refresh_token");
 
       mockPost.mockRestore();
-      // locationSpy cleaned up by vi.clearAllMocks in beforeEach
     });
 
-    it("redirects to /login when no refresh_token exists on 401", async () => {
+    it("cleans up access_token when no refresh_token on 401", async () => {
       mockedGetCookie.mockReturnValue(undefined);
 
       const hrefSetter = vi.fn();
@@ -164,12 +168,43 @@ describe("apiClient", () => {
       };
 
       await expect(getResponseInterceptor().rejected!(error)).rejects.toBeDefined();
+      expect(mockedDeleteCookie).toHaveBeenCalledWith("access_token");
+    });
+
+    it("reports 5xx errors to Sentry", async () => {
+      const error = {
+        config: { headers: {}, url: "/items" },
+        response: { status: 500 },
+      };
+
+      await expect(getResponseInterceptor().rejected!(error)).rejects.toBe(error);
+      expect(Sentry.captureException).toHaveBeenCalledWith(error, {
+        tags: { api_status: 500, api_url: "/items" },
+      });
+    });
+
+    it("does not report 401 errors to Sentry", async () => {
+      mockedGetCookie.mockReturnValue(undefined);
+
+      Object.defineProperty(window, "location", {
+        value: { ...window.location, href: "" },
+        writable: true,
+        configurable: true,
+      });
+
+      const error = {
+        config: { headers: {}, url: "/items", _retry: false },
+        response: { status: 401 },
+      };
+
+      await expect(getResponseInterceptor().rejected!(error)).rejects.toBeDefined();
+      expect(Sentry.captureException).not.toHaveBeenCalled();
     });
 
     it("rejects non-401 errors without retry", async () => {
       const error = {
-        config: { headers: {} },
-        response: { status: 500 },
+        config: { headers: {}, url: "/items" },
+        response: { status: 400 },
       };
 
       await expect(getResponseInterceptor().rejected!(error)).rejects.toBe(error);

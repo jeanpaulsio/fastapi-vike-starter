@@ -1,7 +1,6 @@
 import { usePageContext } from "vike-react/usePageContext";
-import { navigate } from "vike/client/router";
 import { APP_LOGO, APP_NAME, APP_TAGLINE } from "@/lib/app-config";
-import { useAuthStore } from "@/stores/auth-store";
+import { useCurrentUser, useLogout } from "@/hooks/useAuth";
 
 const NAV_ITEMS = [
   { href: "/app/dashboard", label: "Dashboard", icon: "⊞" },
@@ -17,8 +16,8 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { urlPathname } = usePageContext();
-  const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
+  const { data: user } = useCurrentUser();
+  const logout = useLogout();
 
   const initials = user ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase() : "?";
 
@@ -97,10 +96,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               {user ? `${user.first_name} ${user.last_name}` : "Loading..."}
             </div>
             <button
-              onClick={() => {
-                logout();
-                navigate("/login");
-              }}
+              onClick={logout}
               className="text-[9px] text-muted-foreground hover:text-primary"
             >
               Sign out
