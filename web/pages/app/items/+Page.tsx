@@ -36,14 +36,15 @@ export default function ItemsPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <h1 className="mb-1 text-xl font-extrabold text-foreground">Items</h1>
-      <p className="mb-5 text-xs text-muted-foreground">
-        Example CRUD resource — demonstrates the full stack pattern.
-      </p>
+      <p className="mb-5 text-xs text-muted-foreground">Example CRUD resource — demonstrates the full stack pattern.</p>
 
       {/* Create form */}
       <form onSubmit={handleSubmit} className="mb-5 rounded-[10px] border border-border bg-card p-4">
         <div className="mb-3">
-          <label htmlFor="title" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <label
+            htmlFor="title"
+            className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+          >
             Title
           </label>
           <input
@@ -57,7 +58,10 @@ export default function ItemsPage() {
           />
         </div>
         <div className="mb-3">
-          <label htmlFor="description" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <label
+            htmlFor="description"
+            className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+          >
             Description (optional)
           </label>
           <textarea
@@ -94,9 +98,7 @@ export default function ItemsPage() {
             >
               <div>
                 <div className="text-sm font-semibold text-foreground">{item.title}</div>
-                {item.description && (
-                  <div className="mt-0.5 text-xs text-muted-foreground">{item.description}</div>
-                )}
+                {item.description && <div className="mt-0.5 text-xs text-muted-foreground">{item.description}</div>}
                 <div className="mt-1 text-[10px] text-muted-foreground">
                   {item.status} &middot; {new Date(item.created_at).toLocaleDateString()}
                 </div>
