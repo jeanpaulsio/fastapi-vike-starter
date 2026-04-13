@@ -11,6 +11,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 from alembic import op
+from app.db.migration_helpers import drop_enum, ensure_enum_exists
 
 revision: str = "0001"
 down_revision: str | None = None
@@ -19,6 +20,10 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    # Enums — created explicitly so re-runs and downgrade/upgrade cycles are safe.
+    ensure_enum_exists("user_role", ["admin", "user"])
+    ensure_enum_exists("token_type", ["email_verification", "password_reset"])
+
     # Users table
     op.create_table(
         "users",
@@ -29,7 +34,7 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.String(255), nullable=False),
         sa.Column(
             "role",
-            sa.Enum("admin", "user", name="user_role"),
+            sa.Enum("admin", "user", name="user_role", create_type=False),
             nullable=False,
         ),
         sa.Column("email_verified", sa.Boolean(), nullable=False, server_default=sa.text("false")),
@@ -58,7 +63,7 @@ def upgrade() -> None:
         sa.Column("token", sa.String(255), nullable=False),
         sa.Column(
             "type",
-            sa.Enum("email_verification", "password_reset", name="token_type"),
+            sa.Enum("email_verification", "password_reset", name="token_type", create_type=False),
             nullable=False,
         ),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
@@ -79,5 +84,5 @@ def downgrade() -> None:
     op.drop_table("verification_tokens")
     op.drop_index("ix_users_email", table_name="users")
     op.drop_table("users")
-    op.execute("DROP TYPE IF EXISTS token_type")
-    op.execute("DROP TYPE IF EXISTS user_role")
+    drop_enum("token_type")
+    drop_enum("user_role")

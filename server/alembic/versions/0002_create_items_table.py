@@ -11,6 +11,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 from alembic import op
+from app.db.migration_helpers import drop_enum, ensure_enum_exists
 
 revision: str = "0002"
 down_revision: str | None = "0001"
@@ -19,6 +20,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    ensure_enum_exists("item_status", ["active", "archived"])
     op.create_table(
         "items",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -26,7 +28,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
             "status",
-            sa.Enum("active", "archived", name="item_status"),
+            sa.Enum("active", "archived", name="item_status", create_type=False),
             nullable=False,
         ),
         sa.Column("owner_id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -49,4 +51,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("items")
-    op.execute("DROP TYPE IF EXISTS item_status")
+    drop_enum("item_status")

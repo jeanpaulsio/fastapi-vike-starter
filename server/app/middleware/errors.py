@@ -1,5 +1,6 @@
 """Consistent API error envelope and global exception handlers."""
 
+from collections.abc import Sequence
 from typing import Any
 
 import structlog
@@ -11,6 +12,20 @@ from pydantic import BaseModel
 from app.utils.exceptions import AppError
 
 logger = structlog.get_logger()
+
+# Field name fragments that should NEVER have their failing input echoed back
+# in a 422 response. Matching is substring + case-insensitive on the last
+# element of the Pydantic ``loc`` tuple.
+SENSITIVE_FIELD_FRAGMENTS: tuple[str, ...] = (
+    "password",
+    "token",
+    "secret",
+    "authorization",
+    "api_key",
+    "apikey",
+)
+
+_REDACTED = "[redacted]"
 
 
 class ErrorDetail(BaseModel):
@@ -37,6 +52,40 @@ def error_response(
     )
 
 
+def _is_sensitive_loc(loc: tuple[Any, ...]) -> bool:
+    """Return True if the last segment of a Pydantic ``loc`` looks sensitive."""
+    if not loc:
+        return False
+    last = str(loc[-1]).lower()
+    return any(fragment in last for fragment in SENSITIVE_FIELD_FRAGMENTS)
+
+
+def sanitize_validation_errors(errors: Sequence[Any]) -> list[dict[str, Any]]:
+    """Scrub a Pydantic validation error list before putting it on the wire.
+
+    Accepts whatever shape ``RequestValidationError.errors()`` returns (typed
+    as ``Sequence[Any]`` in Pydantic v2). Each entry is expected to be dict-like.
+
+    Two things happen here:
+
+    1. ``input`` is redacted whenever the field path looks sensitive, so we
+       never echo a plaintext password or token back to the client. A successful
+       422 on a ``password`` field should never reveal what the user typed.
+    2. ``ctx`` is dropped entirely. It's useful for server-side debugging but
+       it can leak regex patterns, expected values, and other validation
+       internals that make attacking the API easier. Pydantic v2 also puts
+       non-JSON-serializable objects there (e.g. ``ValueError`` instances),
+       which would otherwise need per-type coercion.
+    """
+    clean: list[dict[str, Any]] = []
+    for err in errors:
+        safe: dict[str, Any] = {k: v for k, v in dict(err).items() if k != "ctx"}
+        if "input" in safe and _is_sensitive_loc(tuple(safe.get("loc", ()))):
+            safe["input"] = _REDACTED
+        clean.append(safe)
+    return clean
+
+
 def register_error_handlers(app: FastAPI) -> None:
     """Register global exception handlers on the FastAPI app."""
 
@@ -52,24 +101,11 @@ def register_error_handlers(app: FastAPI) -> None:
     async def validation_error_handler(
         _request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        # exc.errors() can contain non-serializable objects (e.g. ValueError
-        # instances in the 'ctx' field). Stringify the ctx to ensure the
-        # response is always JSON-serializable.
-        safe_errors = []
-        for err in exc.errors():
-            clean = {**err}
-            if "ctx" in clean:
-                clean["ctx"] = {
-                    k: str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
-                    for k, v in clean["ctx"].items()
-                }
-            safe_errors.append(clean)
-
         return error_response(
             code="ValidationError",
             message="Request validation failed",
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=safe_errors,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=sanitize_validation_errors(exc.errors()),
         )
 
     @app.exception_handler(Exception)
