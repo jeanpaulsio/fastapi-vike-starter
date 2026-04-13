@@ -82,8 +82,8 @@ web/
   services/
     auth.ts              <- login, getMe, refreshToken
     client.ts            <- Axios instance with interceptors
-  stores/
-    auth-store.ts        <- Zustand auth state
+  hooks/
+    useAuth.ts           <- useCurrentUser() + useLogout() via React Query
   lib/
     cookies.ts           <- isomorphic cookie helpers
     types.ts             <- User, TokenResponse types

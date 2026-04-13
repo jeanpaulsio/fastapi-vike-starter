@@ -95,10 +95,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <div className="truncate text-[11px] font-semibold text-sidebar-foreground">
               {user ? `${user.first_name} ${user.last_name}` : "Loading..."}
             </div>
-            <button
-              onClick={logout}
-              className="text-[9px] text-muted-foreground hover:text-primary"
-            >
+            <button onClick={logout} className="text-[9px] text-muted-foreground hover:text-primary">
               Sign out
             </button>
           </div>

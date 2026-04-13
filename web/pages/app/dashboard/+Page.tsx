@@ -7,9 +7,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <h1 className="mb-1 text-xl font-extrabold text-foreground">Welcome, {firstName}</h1>
-      <p className="mb-5 text-xs text-muted-foreground">
-        Your dashboard — add widgets, charts, and summaries here.
-      </p>
+      <p className="mb-5 text-xs text-muted-foreground">Your dashboard — add widgets, charts, and summaries here.</p>
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[

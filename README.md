@@ -38,7 +38,7 @@ A production-ready monorepo template for full-stack applications with **FastAPI*
 
 - File-based routing with Vike
 - SSR with Express production server
-- Zustand auth store
+- React Query for auth state (`useCurrentUser()` hook)
 - Axios client with token refresh interceptor
 - Isomorphic cookie helpers (works in SSR + browser)
 - Dark-themed dashboard layout with sidebar
@@ -131,8 +131,8 @@ python -m celery -A app.workers.celery_app beat --loglevel=info
 │   ├── pages/               # File-based routing (+Page, +Layout, +guard)
 │   ├── components/          # Shared UI components (shadcn/ui)
 │   ├── services/            # Axios client + API service functions
-│   ├── stores/              # Zustand state management
-│   ├── lib/                 # App config, types, utilities
+│   ├── hooks/               # React hooks (useCurrentUser, useLogout)
+│   ├── lib/                 # App config, types, cookie helpers, utilities
 │   └── tests/               # Vitest + React Testing Library
 │
 ├── .github/workflows/       # CI pipeline
@@ -152,9 +152,18 @@ python -m celery -A app.workers.celery_app beat --loglevel=info
 
 ### Login Flow
 
-1. `POST /api/auth/login` — returns access + refresh tokens (set as cookies)
-2. Route guards (`+guard.ts`) check cookies on every page load (SSR + client)
-3. `POST /api/auth/refresh` — refreshes expired access tokens automatically
+1. `POST /api/auth/login` — returns `{ access_token, refresh_token }` in the response body
+2. Web client stores them in cookies so Vike `+guard.ts` files can read them during SSR
+3. `POST /api/auth/refresh` — accepts `{ refresh_token }` in the body, returns new tokens
+
+### Backend is client-agnostic (web + mobile)
+
+The backend never sets or reads auth cookies. `get_current_user` uses FastAPI's `HTTPBearer`, login returns tokens in the body, and refresh reads the token from the request body. The same API supports:
+
+- **Web (the Vike frontend in this repo)** — Axios interceptor stores tokens in cookies so SSR guards can read them from request headers.
+- **Mobile (React Native, native iOS/Android — lives in its own repo)** — client stores tokens in SecureStore / Keychain and attaches `Authorization: Bearer <token>` on every request. No cookies involved.
+
+`server/tests/integration/test_mobile_client_flow.py` locks this contract in — it runs the full register → verify → login → protected call → refresh → protected call flow using only `Authorization` headers and asserts no `Set-Cookie` headers ever appear. If anyone adds a cookie-only code path, CI fails.
 
 ### Password Reset
 
@@ -162,11 +171,12 @@ python -m celery -A app.workers.celery_app beat --loglevel=info
 2. User clicks link → `GET /reset-password?token=...`
 3. `POST /api/auth/reset-password` — updates password
 
-### Key Design Decisions
+### Web Frontend Design Decisions
 
-- **Cookies, not localStorage** — required for SSR to work
+- **Cookies, not localStorage (web only)** — required for Vike SSR guards to read tokens from request headers
 - **Guards are `+guard.ts`, not `+guard.client.ts`** — enforced on server render
 - **Isomorphic cookie helpers** — `getCookie(name, cookieStr?)` works server + client
+- **React Query for auth state** — `useCurrentUser()` hook, no Zustand
 
 ## Email Configuration
 

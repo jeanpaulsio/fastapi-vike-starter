@@ -152,17 +152,25 @@ Defaults to console backend in dev. Set `EMAIL_BACKEND=resend` or `EMAIL_BACKEND
 ### Endpoints
 - `POST /api/auth/register` — create account, send verification email
 - `POST /api/auth/verify-email` — verify email with token
-- `POST /api/auth/login` — returns access + refresh tokens (cookies)
-- `POST /api/auth/refresh` — refresh access token
+- `POST /api/auth/login` — returns access + refresh tokens in the response body
+- `POST /api/auth/refresh` — accepts `{ refresh_token }` in the body, returns new tokens
 - `POST /api/auth/forgot-password` — send password reset email
 - `POST /api/auth/reset-password` — reset password with token
 
-### Key Design Decisions
-- **Cookies, not localStorage** — required for SSR
-- **Guards are `+guard.ts`, not `+guard.client.ts`** — enforced on server-side render
-- **Isomorphic cookie helpers** — `getCookie(name, cookieStr?)` works server + client
-- **React Query for user state** — `useCurrentUser()` hook, no Zustand for server state
-- RBAC: `UserRole.ADMIN` and `UserRole.USER`
+### The backend is client-agnostic
+Login returns tokens in the response body. Refresh reads the refresh token from the request body. No endpoint sets or reads auth cookies, and `get_current_user` uses `HTTPBearer`. This means the exact same API supports two client shapes:
+
+- **Web (Vike frontend in this repo):** Axios stores tokens in cookies so Vike `+guard.ts` files can read them during SSR. `getCookie(name, cookieStr?)` is isomorphic.
+- **Mobile (React Native, native iOS/Android — lives in a separate repo):** client stores tokens in SecureStore / Keychain and attaches `Authorization: Bearer <token>` on every request. No cookies involved.
+
+`tests/integration/test_mobile_client_flow.py` locks this contract in — if anyone adds a cookie-only code path, that test fails. Don't delete it.
+
+### Web frontend specifics
+- **Cookies, not localStorage** — required for Vike SSR to read tokens from request headers.
+- **Guards are `+guard.ts`, not `+guard.client.ts`** — enforced on server-side render.
+- **Isomorphic cookie helpers** — `getCookie(name, cookieStr?)` works server + client.
+- **React Query for user state** — `useCurrentUser()` hook.
+- RBAC: `UserRole.ADMIN` and `UserRole.USER`.
 
 ## Data Model (Core Tables)
 

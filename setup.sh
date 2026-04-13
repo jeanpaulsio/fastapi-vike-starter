@@ -62,7 +62,6 @@ for file in \
   web/pages/+config.ts \
   web/server.js \
   server/app/config.py \
-  server/pyproject.toml \
   .env.example \
   render.yaml \
   CLAUDE.md \
@@ -74,7 +73,6 @@ done
 
 # Files that contain {{APP_SLUG}}
 for file in \
-  server/pyproject.toml \
   render.yaml \
   CLAUDE.md \
   README.md; do
@@ -83,13 +81,19 @@ for file in \
   fi
 done
 
+# pyproject.toml uses a real default name (so template CI works); rewrite it here.
+sedi "s/fastapi-vike-starter-server/${APP_SLUG}-server/g" server/pyproject.toml
+sedi "s/FastAPI Vike Starter — FastAPI backend/${APP_DISPLAY_NAME} — FastAPI backend/g" server/pyproject.toml
+
 # Files that contain {{APP_SLUG_UNDERSCORE}} (database names use underscores)
+# Note: .github/workflows/ci.yml is NOT in this list — it hardcodes `starter_test`
+# so the template's own CI works before substitution, and post-setup projects
+# keep the stable CI-only DB name (production DB comes from Render env vars anyway).
 for file in \
   server/app/config.py \
   server/alembic.ini \
   server/tests/conftest.py \
   .env.example \
-  .github/workflows/ci.yml \
   CLAUDE.md \
   README.md; do
   if [ -f "$file" ]; then

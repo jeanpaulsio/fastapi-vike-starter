@@ -6,7 +6,7 @@ import { useCurrentUser } from "@/hooks/useAuth";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data: user, isError } = useCurrentUser();
+  const { isError } = useCurrentUser();
 
   useEffect(() => {
     if (isError) {
