@@ -84,12 +84,14 @@ for file in \
 done
 
 # Files that contain {{APP_SLUG_UNDERSCORE}} (database names use underscores)
+# Note: .github/workflows/ci.yml is NOT in this list — it hardcodes `starter_test`
+# so the template's own CI works before substitution, and post-setup projects
+# keep the stable CI-only DB name (production DB comes from Render env vars anyway).
 for file in \
   server/app/config.py \
   server/alembic.ini \
   server/tests/conftest.py \
   .env.example \
-  .github/workflows/ci.yml \
   CLAUDE.md \
   README.md; do
   if [ -f "$file" ]; then

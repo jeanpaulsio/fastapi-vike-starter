@@ -43,7 +43,7 @@ class TestListItems:
 
     async def test_list_requires_auth(self, client: AsyncClient) -> None:
         resp = await client.get("/api/items")
-        assert resp.status_code == 403
+        assert resp.status_code == 401
 
 
 class TestCreateItem:
@@ -78,9 +78,7 @@ class TestCreateItem:
 
 
 class TestGetItem:
-    async def test_get(
-        self, client: AsyncClient, auth_headers: dict, sample_item: Item
-    ) -> None:
+    async def test_get(self, client: AsyncClient, auth_headers: dict, sample_item: Item) -> None:
         resp = await client.get(f"/api/items/{sample_item.id}", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["title"] == "Test Item"
@@ -97,9 +95,7 @@ class TestGetItem:
 
 
 class TestUpdateItem:
-    async def test_update(
-        self, client: AsyncClient, auth_headers: dict, sample_item: Item
-    ) -> None:
+    async def test_update(self, client: AsyncClient, auth_headers: dict, sample_item: Item) -> None:
         resp = await client.patch(
             f"/api/items/{sample_item.id}",
             json={"title": "Updated"},
@@ -121,9 +117,7 @@ class TestUpdateItem:
 
 
 class TestDeleteItem:
-    async def test_delete(
-        self, client: AsyncClient, auth_headers: dict, sample_item: Item
-    ) -> None:
+    async def test_delete(self, client: AsyncClient, auth_headers: dict, sample_item: Item) -> None:
         resp = await client.delete(f"/api/items/{sample_item.id}", headers=auth_headers)
         assert resp.status_code == 204
 
