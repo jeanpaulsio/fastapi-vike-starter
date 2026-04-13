@@ -34,7 +34,7 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.String(255), nullable=False),
         sa.Column(
             "role",
-            sa.Enum("admin", "user", name="user_role", create_type=False),
+            postgresql.ENUM("admin", "user", name="user_role", create_type=False),
             nullable=False,
         ),
         sa.Column("email_verified", sa.Boolean(), nullable=False, server_default=sa.text("false")),
@@ -63,7 +63,12 @@ def upgrade() -> None:
         sa.Column("token", sa.String(255), nullable=False),
         sa.Column(
             "type",
-            sa.Enum("email_verification", "password_reset", name="token_type", create_type=False),
+            postgresql.ENUM(
+                "email_verification",
+                "password_reset",
+                name="token_type",
+                create_type=False,
+            ),
             nullable=False,
         ),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),

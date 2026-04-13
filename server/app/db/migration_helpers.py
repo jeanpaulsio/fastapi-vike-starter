@@ -17,9 +17,16 @@ The fix is to always create/drop the ``TYPE`` explicitly with an idempotent
 ``DO $$`` block, and tell SQLAlchemy not to manage it with ``create_type=False``
 on the column declaration.
 
+Use ``postgresql.ENUM``, not the generic ``sa.Enum``. The generic type does not
+reliably forward ``create_type=False`` to the postgres dialect when it adapts,
+so SQLAlchemy still emits ``CREATE TYPE`` at table-create time and you get
+``DuplicateObject`` on the second run.
+
 Usage in a migration
 --------------------
 .. code-block:: python
+
+    from sqlalchemy.dialects import postgresql
 
     from app.db.migration_helpers import ensure_enum_exists, drop_enum
 
@@ -29,7 +36,7 @@ Usage in a migration
             "users",
             sa.Column(
                 "role",
-                sa.Enum("admin", "user", name="user_role", create_type=False),
+                postgresql.ENUM("admin", "user", name="user_role", create_type=False),
                 nullable=False,
             ),
             # ...
