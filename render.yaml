@@ -36,45 +36,24 @@ services:
       - key: PYTHON_VERSION
         value: "3.13.3"
 
-  # Celery worker
+  # arq background worker
+  # Runs BOTH on-demand jobs and cron schedules — no separate scheduler process.
+  # IMPORTANT: keep this at a single instance. Running multiple arq workers with
+  # overlapping cron schedules will cause crons to fire once per replica.
   - type: worker
     name: {{APP_SLUG}}-worker
     runtime: python
-    plan: standard
+    plan: starter
     branch: main
     autoDeploy: true
     buildCommand: cd server && pip install -e .
-    startCommand: cd server && celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+    startCommand: cd server && arq app.worker.WorkerSettings
     envVars:
       - key: DATABASE_URL
         fromDatabase:
           name: {{APP_SLUG}}-db
           property: connectionString
       - key: DATABASE_URL_SYNC
-        fromDatabase:
-          name: {{APP_SLUG}}-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: {{APP_SLUG}}-redis
-          type: redis
-          property: connectionString
-      - key: SECRET_KEY
-        generateValue: true
-      - key: PYTHON_VERSION
-        value: "3.13.3"
-
-  # Celery Beat scheduler (single instance)
-  - type: worker
-    name: {{APP_SLUG}}-beat
-    runtime: python
-    plan: starter
-    branch: main
-    autoDeploy: true
-    buildCommand: cd server && pip install -e .
-    startCommand: cd server && celery -A app.workers.celery_app beat --loglevel=info
-    envVars:
-      - key: DATABASE_URL
         fromDatabase:
           name: {{APP_SLUG}}-db
           property: connectionString

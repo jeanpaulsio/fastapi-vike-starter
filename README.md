@@ -6,11 +6,11 @@ A production-ready monorepo template for full-stack applications with **FastAPI*
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.13, FastAPI, SQLAlchemy 2.0 (async), Alembic, Celery + Redis |
+| Backend | Python 3.13, FastAPI, SQLAlchemy 2.0 (async), Alembic, arq + Redis |
 | Frontend | Vike (SSR on Vite), React 19, TypeScript, Tailwind CSS v4, shadcn/ui |
 | Database | PostgreSQL (asyncpg driver) |
-| Cache/Queue | Redis (Celery broker + rate limiting) |
-| Deployment | Render Blueprint (API + SSR + Worker + Beat + Postgres + Redis) |
+| Cache/Queue | Redis (arq broker + rate limiting) |
+| Deployment | Render Blueprint (API + SSR + Worker + Postgres + Redis) |
 | CI | GitHub Actions (lint + format + type check + test + build) |
 
 ### Auth System (ready to use)
@@ -96,19 +96,18 @@ Open http://localhost:3000. Login with `admin@example.com` / `admin123`.
 
 API docs (Swagger): http://localhost:8000/api/docs (only when `DEBUG=true`).
 
-### 6. Workers (optional — needed for background tasks)
+### 6. Worker (optional — needed for background tasks and cron)
 
 ```bash
 # Start Redis first
 brew services start redis  # or: docker run -d -p 6379:6379 redis
 
-# Terminal 3 — Celery worker
+# Terminal 3 — arq worker (runs on-demand jobs AND cron schedules)
 cd server && source .venv/bin/activate
-python -m celery -A app.workers.celery_app worker --loglevel=info
-
-# Terminal 4 — Celery Beat (cron scheduler)
-python -m celery -A app.workers.celery_app beat --loglevel=info
+arq app.worker.WorkerSettings
 ```
+
+One process runs both queue jobs and cron. No separate Beat scheduler.
 
 ## Project Structure
 
@@ -120,7 +119,8 @@ python -m celery -A app.workers.celery_app beat --loglevel=info
 │   │   ├── schemas/         # Pydantic request/response schemas
 │   │   ├── services/        # Business logic + BaseRepository
 │   │   ├── middleware/      # Logging, rate limiting, errors
-│   │   ├── workers/         # Celery tasks + cron registry
+│   │   ├── worker.py        # arq WorkerSettings (jobs + cron schedule)
+│   │   ├── workers/         # Job implementations (monitoring, etc.)
 │   │   ├── templates/       # Email templates (Jinja2)
 │   │   └── utils/           # Exceptions, pagination
 │   ├── tests/               # pytest (unit + integration)

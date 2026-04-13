@@ -22,15 +22,15 @@ Frontend (Vike SSR + React)
         ↓
 API Layer (FastAPI — Auth, RBAC, Routing)
         ↓
-Database (PostgreSQL)  |  Job Queue (Celery + Redis)
+Database (PostgreSQL)  |  Job Queue (arq + Redis)
 ```
 
 ## Tech Stack
 
-- **Backend**: Python 3.13, FastAPI, SQLAlchemy 2.0 (async), Alembic, Celery + Redis
+- **Backend**: Python 3.13, FastAPI, SQLAlchemy 2.0 (async), Alembic, arq + Redis
 - **Frontend**: Vike (SSR framework on Vite), React 19, TypeScript, Tailwind CSS v4, shadcn/ui
 - **Database**: PostgreSQL (asyncpg driver)
-- **Deployment**: Render (web service + workers + managed Postgres + Redis)
+- **Deployment**: Render (web service + worker + managed Postgres + Redis)
 
 ## Development Commands
 
@@ -60,9 +60,8 @@ mypy app/ --ignore-missing-imports
 python -m alembic revision --autogenerate -m "description"
 python -m alembic upgrade head
 
-# Celery worker (requires Redis running)
-python -m celery -A app.workers.celery_app worker --loglevel=info
-python -m celery -A app.workers.celery_app beat --loglevel=info
+# arq worker (requires Redis running) — runs on-demand jobs AND cron schedules
+arq app.worker.WorkerSettings
 
 # Seed admin user (requires Postgres running)
 python scripts/seed.py
@@ -108,8 +107,8 @@ npm test            # Vitest (80% coverage target)
 | New API endpoint? | `server/app/api/new_resource.py` → register in `api/router.py` |
 | Business logic? | `server/app/services/` — never in routes, never in models |
 | New frontend page? | `web/pages/app/<name>/+Page.tsx` (Vike file-based routing) |
-| New background job? | `server/app/workers/` as a Celery task |
-| New cron job? | Decorate with `@cron("name", hour=2)` in worker module — auto-registered |
+| New background job? | `async def job_name(ctx, ...)` in `server/app/workers/<module>.py` → add to `WorkerSettings.functions` |
+| New cron job? | Write the job as above, then append `cron(job_name, hour=2, minute=0)` to `WorkerSettings.cron_jobs` |
 | New migration? | `cd server && alembic revision --autogenerate -m "description"` |
 | New CRUD resource? | Extend `BaseRepository` in `services/` (see `item_service.py` as example) |
 
@@ -128,14 +127,49 @@ All list endpoints should be paginated.
 `get_by_id`, `get_by_id_or_raise`, `list` (paginated), `create`, `update`, `delete`, `soft_delete`.
 Override `create` when you need to transform fields (e.g., hashing passwords).
 
-### Cron Jobs
-Use the `@cron` decorator from `app.workers.registry`:
+### Background Jobs (arq)
+One worker process runs both on-demand jobs and cron schedules. There is no separate Beat/scheduler service.
+
+**Write a job.** Plain async function, first arg is `ctx`. Open a session from the factory stashed during startup:
 ```python
-@celery.task(name="app.workers.my_worker.my_task")
-@cron("my-job", hour=2, minute=0)
-def my_task():
-    ...
+# app/workers/reports.py
+async def generate_report(ctx, user_id: str) -> dict:
+    async with ctx["session_factory"]() as db:
+        ...
+    return {"status": "ok"}
 ```
+
+**Register it.** In `app/worker.py`, add to `functions` and (if cron) to `cron_jobs`:
+```python
+class WorkerSettings:
+    functions = [health_check, cleanup_expired_tokens, generate_report]
+    cron_jobs = [
+        cron(cleanup_expired_tokens, hour=3, minute=0),
+    ]
+```
+
+**Enqueue from a request.** Grab the pool from wherever you hold it (in the template that means instantiating ad hoc; for a real app you'd put the pool on `request.app.state`):
+```python
+from arq import create_pool
+from arq.connections import RedisSettings
+
+pool = await create_pool(RedisSettings.from_dsn(settings.redis_url))
+await pool.enqueue_job("generate_report", user_id)
+```
+
+**Tests.** Unit-test the job body directly by passing a fake `ctx` with a real `session_factory`. Don't spin up the worker. `tests/unit/test_worker_settings.py` is the contract guard on the registered functions + cron schedule.
+
+### Two-layer jobs: transport vs domain status
+For long-running async work users can observe (image generation, report exports, anything with a progress bar), you usually want **two tables**, not one:
+
+1. **Queue transport** — `arq_queue:default` in Redis. Ephemeral. Holds the job envelope, retries, and the raw result for a few minutes. arq manages this for you; you do not touch it directly.
+2. **Domain status** — a Postgres table you own (e.g. `visualization_jobs` with columns `status enum('pending','running','done','failed')`, `result_url`, `error`, `created_by`, timestamps). This is the canonical record the API and the frontend poll against.
+
+The request handler creates the domain row first, then enqueues an arq job with that row's id. The job updates the domain row as it progresses and writes the final artifact. The frontend polls `/jobs/:id` (or hits an SSE endpoint) against the domain row, not against Redis.
+
+Why both: Redis is ephemeral and horizontal — fine for "is this job queued?" but wrong for "show the user their last 20 exports." Postgres gives you ownership, history, pagination, and RBAC. If you only have one, you'll reach for the other within a week.
+
+The starter doesn't ship this table because nothing in the template needs it. Add it the first time a feature wants observable async work.
 
 ### Email
 Use `send_email(EmailMessage(...))` from `app.services.email_service`.
@@ -182,6 +216,6 @@ All models extend `Base` with UUID primary key and `TimestampMixin` (created_at,
 
 - **Service layer for business logic.** Routes are thin controllers. Models are data definitions. Logic lives in `services/`.
 - **Async by default.** All database operations use async SQLAlchemy. Email sending runs in an executor.
-- **Async task execution.** Long-running tasks go through Celery. Never block a request handler.
+- **Async task execution.** Long-running tasks go through arq. Never block a request handler.
 - **Immutable data patterns.** Create new objects rather than mutating. Return new instances from service methods.
 - **Validate at boundaries.** Pydantic schemas validate all API input. Never trust external data.

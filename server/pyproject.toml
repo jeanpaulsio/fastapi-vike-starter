@@ -18,7 +18,7 @@ dependencies = [
     "python-multipart>=0.0.12",
     "email-validator>=2.2.0",
     "httpx>=0.28.0",
-    "celery[redis]>=5.4.0",
+    "arq>=0.26.0",
     "redis>=5.2.0",
     "slowapi>=0.1.9",
     "structlog>=24.4.0",
@@ -84,10 +84,9 @@ addopts = "--cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under
 [tool.coverage.run]
 concurrency = ["greenlet"]
 omit = [
-    "app/workers/celery_app.py",      # Module-level Celery init — requires running broker
-    "app/workers/monitoring_worker.py", # Celery task definitions — tested via integration later
-    "app/main.py",                     # App factory + lifespan — glue code, tested via ASGI client
-    "app/limiter.py",                  # Thin slowapi config — no logic to test
+    "app/worker.py",                    # arq WorkerSettings — exercised by running worker, not unit tests
+    "app/main.py",                      # App factory + lifespan — glue code, tested via ASGI client
+    "app/limiter.py",                   # Thin slowapi config — no logic to test
 ]
 
 [tool.mypy]
@@ -98,5 +97,5 @@ disallow_untyped_defs = true
 plugins = []
 
 [[tool.mypy.overrides]]
-module = ["celery.*", "structlog.*", "sentry_sdk.*", "resend.*", "slowapi.*"]
+module = ["arq.*", "structlog.*", "sentry_sdk.*", "resend.*", "slowapi.*"]
 ignore_missing_imports = true
