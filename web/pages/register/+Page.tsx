@@ -73,10 +73,14 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <label
+                htmlFor="register-first-name"
+                className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 First Name
               </label>
               <input
+                id="register-first-name"
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
@@ -85,10 +89,14 @@ export default function RegisterPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <label
+                htmlFor="register-last-name"
+                className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+              >
                 Last Name
               </label>
               <input
+                id="register-last-name"
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
@@ -99,10 +107,14 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <label
+              htmlFor="register-email"
+              className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Email
             </label>
             <input
+              id="register-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -112,10 +124,14 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <label
+              htmlFor="register-password"
+              className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Password
             </label>
             <input
+              id="register-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -126,10 +142,14 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <label
+              htmlFor="register-confirm-password"
+              className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+            >
               Confirm Password
             </label>
             <input
+              id="register-confirm-password"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

@@ -85,17 +85,18 @@ describe("auth flow: register -> verify -> login -> dashboard", () => {
 
     renderWithQuery(<RegisterPage />);
 
-    // Labels in these pages are not htmlFor-associated, so query by type/order.
-    const textInputs = document.querySelectorAll<HTMLInputElement>('input[type="text"]');
-    fireEvent.change(textInputs[0], { target: { value: "Jane" } });
-    fireEvent.change(textInputs[1], { target: { value: "Doe" } });
-
-    const emailInput = document.querySelector<HTMLInputElement>('input[type="email"]')!;
-    fireEvent.change(emailInput, { target: { value: "jane@example.com" } });
-
-    const passwordInputs = document.querySelectorAll<HTMLInputElement>('input[type="password"]');
-    fireEvent.change(passwordInputs[0], { target: { value: "password123" } });
-    fireEvent.change(passwordInputs[1], { target: { value: "password123" } });
+    fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: "Jane" } });
+    fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: "Doe" } });
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "jane@example.com" },
+    });
+    // Password + Confirm Password both match /password/i, so use exact-match labels.
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirm Password"), {
+      target: { value: "password123" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -143,10 +144,12 @@ describe("auth flow: register -> verify -> login -> dashboard", () => {
 
     renderWithQuery(<LoginPage />);
 
-    const emailInput = document.querySelector<HTMLInputElement>('input[type="email"]')!;
-    const passwordInput = document.querySelector<HTMLInputElement>('input[type="password"]')!;
-    fireEvent.change(emailInput, { target: { value: "jane@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "jane@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: { value: "password123" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
@@ -172,10 +175,12 @@ describe("auth flow: register -> verify -> login -> dashboard", () => {
 
     renderWithQuery(<LoginPage />);
 
-    const emailInput = document.querySelector<HTMLInputElement>('input[type="email"]')!;
-    const passwordInput = document.querySelector<HTMLInputElement>('input[type="password"]')!;
-    fireEvent.change(emailInput, { target: { value: "unverified@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "unverified@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/password/i), {
+      target: { value: "password123" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
     const alert = await screen.findByRole("alert");
