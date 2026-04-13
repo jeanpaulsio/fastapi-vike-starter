@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
             "status",
-            sa.Enum("active", "archived", name="item_status", create_type=False),
+            postgresql.ENUM("active", "archived", name="item_status", create_type=False),
             nullable=False,
         ),
         sa.Column("owner_id", postgresql.UUID(as_uuid=True), nullable=False),
