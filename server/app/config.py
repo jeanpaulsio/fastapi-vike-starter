@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     db_pool_timeout: int = 30
     db_pool_recycle: int = 1800  # 30 minutes
 
-    # Redis / Celery
+    # Redis (arq worker broker + rate limiting)
     redis_url: str = "redis://localhost:6379/0"
 
     # Email
