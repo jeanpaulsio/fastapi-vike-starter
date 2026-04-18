@@ -76,6 +76,7 @@ services:
     autoDeploy: true
     buildCommand: cd web && npm ci && npm run build
     startCommand: cd web && node server.js
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: "22"
